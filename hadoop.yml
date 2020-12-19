@@ -1,0 +1,89 @@
+- hosts: all
+  vars:
+     - osname: "{{ ansible_facts['distribution'] }}"
+  tasks:
+
+      - name: "installing jdk "
+        command: "rpm -i jdk"
+        ignore_errors: yes
+ 
+      - name: "installing hadoop "
+        command: "rpm -i hadoop --force"
+        ignore_errors: yes
+
+  
+
+- hosts: namenode
+  tasks:
+       - file:
+              path: "/namenode"
+              state: directory
+       - name: "Configure hdfs-site.xml file"
+         blockinfile:
+             path: "/etc/hadoop/hdfs-site.xml"
+             insertafter: "<configuration>"
+             block: 
+                 <property>
+                 <name>dfs.name.dir</name>
+                 <value>/namenode</value>
+                 </property>
+       - name: "Configure core-site.xml"
+         blockinfile:
+             path: "/etc/hadoop/core-site.xml"
+             insertafter: "<configuration>"
+             block: 
+                 <property>
+                 <name>fs.default.name</name>
+                 <value>hdfs://0.0.0.0:9001</value>
+                 </property>
+       
+#       - name: "format"
+#         shell: "hadoop namenode -format -y"
+
+       - name: "start_namenode"
+         command: "hadoop-daemon.sh start namenode"
+    
+
+- hosts: datanode
+  tasks:
+       - file:
+              path: "/dn"
+              state: directory
+       - name: "Configure hdfs-site.xml file"
+         blockinfile:
+             path: "/etc/hadoop/hdfs-site.xml"
+             insertafter: "<configuration>"
+             block: 
+                 <property>
+                 <name>dfs.data.dir</name>
+                 <value>/dn</value>
+                 </property>
+       - name: "Configure core-site.xml"
+         blockinfile:
+             path: "/etc/hadoop/core-site.xml"
+             insertafter: "<configuration>"
+             block: 
+                 <property>
+                 <name>fs.default.name</name>
+                 <value>hdfs://192.168.43.2:9001</value>
+                 </property>
+
+       - name: "start_datanode"
+         command: "hadoop-daemon.sh start datanode"
+
+
+  handlers:
+     - name: "format"
+       command: "hadoop format namenode"
+
+     - name: "start_namenode"
+       command: "hadoop-daemon.sh start namenode"
+
+     - name: "start_datanode"
+       command: "hadoop-daemon.sh start datanode"
+
+     - name: "show status of node"
+       command: "jps"
+
+                 
+
